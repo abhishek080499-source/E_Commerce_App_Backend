@@ -8,7 +8,7 @@ const path = require("path");
 // ✅ Payment Controller
 const pay = async (req, res) => {
   try {
-    const { customerName, address, phone, items, grandTotal } = req.body;
+    const { customerName, address, phone,email,pincode, items, grandTotal } = req.body;
 
     // ✅ Generate unique 5-6 digit random bill number
     let billNumber;
@@ -34,6 +34,8 @@ const pay = async (req, res) => {
       customerName,
       address,
       phone,
+      email,
+      pincode,
       items: mappedItems,
       grandTotal
     });
@@ -90,6 +92,8 @@ const pay = async (req, res) => {
     doc.text(`Customer Name: ${customerName}`);
     doc.text(`Address: ${address}`);
     doc.text(`Phone: ${phone}`);
+    doc.text(`Email: ${email}`);
+    doc.text(`Pincode: ${pincode}`);
     doc.moveDown();
 
     doc.text("Items:");

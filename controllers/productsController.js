@@ -19,6 +19,26 @@ exports.getProducts = async (req, res) => {
   }
 };
 
+
+
+// Get single product by ID
+exports.getProductById = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).populate("category", "name");
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+
+
+
+
 // Add product with image + full details
 exports.addProduct = async (req, res) => {
   try {
