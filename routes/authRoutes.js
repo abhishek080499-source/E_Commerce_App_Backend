@@ -37,7 +37,8 @@ const {
   logout, 
   verify, 
   forgotPassword, 
-  resetPassword 
+  resetPassword ,
+  refresh
 } = require("../controllers/authController");
 const { authMiddleware, isAdmin, isCustomer } = require("../middleware/authMiddleware");
 
@@ -46,6 +47,7 @@ const router = express.Router();
 // Public routes
 router.post("/login", login);
 router.post("/signup", signup);
+router.post("/refresh", refresh); 
 
 // Forgot/Reset Password routes (Public)
 router.post("/forgot-password", forgotPassword);

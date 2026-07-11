@@ -70,14 +70,14 @@ exports.login = async (req, res) => {
     const accessToken = jwt.sign(
       { id: user._id, role: user.type, username: user.username },
       process.env.JWT_SECRET || "secretKey",
-      { expiresIn: "15m" }
+      { expiresIn: "1d" }
     );
 
     // Long-lived refresh token
     const refreshToken = jwt.sign(
       { id: user._id },
       process.env.JWT_REFRESH_SECRET || "refreshSecretKey",
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     // Save refresh token in DB
@@ -89,12 +89,12 @@ exports.login = async (req, res) => {
 
   res.cookie("accessToken", accessToken, {
   ...cookieOptions,
-  maxAge: 15 * 60 * 1000,
+  maxAge: 24 * 60 * 60 * 1000,
 });
 
 res.cookie("refreshToken", refreshToken, {
   ...cookieOptions,
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
 });
 
 
@@ -123,11 +123,11 @@ exports.refresh = async (req, res) => {
     const newAccessToken = jwt.sign(
       { id: user._id, role: user.type, username: user.username },
       process.env.JWT_SECRET || "secretKey",
-      { expiresIn: "15m" }
+      { expiresIn: "1d" }
     );
 res.cookie("accessToken", newAccessToken, {
   ...cookieOptions,
-  maxAge: 15 * 60 * 1000,
+  maxAge: 24 * 60 * 60 * 1000,
 });
 
 
