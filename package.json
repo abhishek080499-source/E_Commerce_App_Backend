@@ -1,4 +1,8 @@
+
 {
+  "name": "backend",
+  "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.3",
@@ -17,5 +21,9 @@
     "nodemailer": "^9.0.0",
     "pdfkit": "^0.19.1",
     "streamifier": "^0.1.1"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "build": "echo 'No build step required'"
   }
 }
