@@ -215,12 +215,12 @@ exports.verify = (req, res) => {
 //     res.status(500).json({ error: err.message });
 //   }
 // };
+const SibApiV3Sdk = require("@getbrevo/brevo");
 
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    // Check user
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -229,7 +229,6 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate Reset Token
     const resetToken = jwt.sign(
       { id: user._id },
       process.env.JWT_RESET_SECRET,
@@ -241,89 +240,66 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
-    // Brevo SMTP Transport
-    const transporter = nodemailer.createTransport({
-      host: process.env.BREVO_HOST,
-      port: Number(process.env.BREVO_PORT),
-      secure: false,
-      auth: {
-        user: process.env.BREVO_USER,
-        pass: process.env.BREVO_PASS,
-      },
-    });
-
-    // Verify SMTP
-    await transporter.verify();
-    console.log("✅ Brevo SMTP Connected");
-
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Send Email
-    const info = await transporter.sendMail({
-      from: {
+    const defaultClient = SibApiV3Sdk.ApiClient.instance;
+
+    defaultClient.authentications["api-key"].apiKey =
+      process.env.BREVO_API_KEY;
+
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+
+    await apiInstance.sendTransacEmail({
+      sender: {
+        email: process.env.BREVO_SENDER,
         name: "E-Commerce Support",
-        address: process.env.BREVO_SENDER, // Verified sender email
       },
-      to: email,
+      to: [
+        {
+          email: email,
+          name: user.username,
+        },
+      ],
       subject: "Reset Your Password",
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #ddd;border-radius:10px;">
-          <h2 style="color:#4f46e5;">Password Reset</h2>
+      htmlContent: `
+        <div style="font-family:Arial;padding:20px">
+          <h2>Password Reset</h2>
 
-          <p>Hello <strong>${user.username}</strong>,</p>
+          <p>Hello <b>${user.username}</b>,</p>
 
-          <p>We received a request to reset your password.</p>
+          <p>You requested a password reset.</p>
 
-          <p style="text-align:center;margin:30px 0;">
+          <p>
             <a href="${resetLink}"
                style="
-                background:#4f46e5;
-                color:white;
-                padding:12px 24px;
-                text-decoration:none;
-                border-radius:6px;
-                display:inline-block;
-                font-weight:bold;
+               background:#4f46e5;
+               color:white;
+               padding:12px 20px;
+               border-radius:6px;
+               text-decoration:none;
                ">
-              Reset Password
+               Reset Password
             </a>
           </p>
 
-          <p>
-            Or copy and paste this link into your browser:
-          </p>
+          <p>Or copy this link:</p>
 
-          <p style="word-break:break-all;color:#2563eb;">
-            ${resetLink}
-          </p>
+          <p>${resetLink}</p>
 
-          <p>This link will expire in <strong>15 minutes</strong>.</p>
-
-          <p>If you didn't request this password reset, simply ignore this email.</p>
-
-          <hr>
-
-          <p style="font-size:13px;color:#666;">
-            Thanks,<br>
-            E-Commerce Team
-          </p>
+          <p>This link expires in 15 minutes.</p>
         </div>
       `,
     });
 
-    console.log("✅ Email sent successfully");
-    console.log(info);
-
-    return res.status(200).json({
+    res.json({
       success: true,
-      message: "Password reset link sent successfully.",
+      message: "Password reset email sent successfully.",
     });
 
   } catch (err) {
-    console.error("❌ Forgot Password Error");
     console.error(err);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: err.message,
     });
