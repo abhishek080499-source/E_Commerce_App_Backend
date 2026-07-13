@@ -2,6 +2,7 @@ const User = require("../models/User");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const brevo = require("@getbrevo/brevo");
 
 // Regex for strong password
 const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
@@ -215,8 +216,6 @@ exports.verify = (req, res) => {
 //     res.status(500).json({ error: err.message });
 //   }
 // };
-const SibApiV3Sdk = require("@getbrevo/brevo");
-
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -229,6 +228,7 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
+    // Generate reset token
     const resetToken = jwt.sign(
       { id: user._id },
       process.env.JWT_RESET_SECRET,
@@ -242,25 +242,30 @@ exports.forgotPassword = async (req, res) => {
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    const defaultClient = SibApiV3Sdk.ApiClient.instance;
+    // Configure Brevo API
+    const apiInstance = new brevo.TransactionalEmailsApi();
 
-    defaultClient.authentications["api-key"].apiKey =
-      process.env.BREVO_API_KEY;
+    apiInstance.setApiKey(
+      brevo.TransactionalEmailsApiApiKeys.apiKey,
+      process.env.BREVO_API_KEY
+    );
 
-    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-
+    // Email
     await apiInstance.sendTransacEmail({
       sender: {
         email: process.env.BREVO_SENDER,
         name: "E-Commerce Support",
       },
+
       to: [
         {
           email: email,
           name: user.username,
         },
       ],
+
       subject: "Reset Your Password",
+
       htmlContent: `
         <div style="font-family:Arial;padding:20px">
           <h2>Password Reset</h2>
@@ -272,32 +277,37 @@ exports.forgotPassword = async (req, res) => {
           <p>
             <a href="${resetLink}"
                style="
-               background:#4f46e5;
-               color:white;
-               padding:12px 20px;
-               border-radius:6px;
-               text-decoration:none;
+                 background:#4f46e5;
+                 color:#fff;
+                 padding:12px 20px;
+                 text-decoration:none;
+                 border-radius:6px;
+                 display:inline-block;
                ">
-               Reset Password
+              Reset Password
             </a>
           </p>
 
-          <p>Or copy this link:</p>
+          <p>If the button doesn't work, copy this link:</p>
 
           <p>${resetLink}</p>
 
-          <p>This link expires in 15 minutes.</p>
+          <p>This link expires in <b>15 minutes</b>.</p>
+
+          <hr>
+
+          <small>E-Commerce Team</small>
         </div>
       `,
     });
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: "Password reset email sent successfully.",
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("Brevo Error:", err);
 
     res.status(500).json({
       success: false,
