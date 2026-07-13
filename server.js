@@ -15,6 +15,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
+const wishlistRoutes = require("./routes/wishlistRoutes");
 
 // Jobs
 const { startStockCheckJob } = require("./jobs/stockCheckJob");
@@ -70,6 +71,7 @@ app.use("/payment", paymentRoutes);
 app.use("/users", userRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/categories", categoryRoutes);
+app.use("/wishlist", wishlistRoutes);
 
 // ✅ 404 handler
 app.use((req, res, next) => {
