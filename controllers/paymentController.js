@@ -9,6 +9,8 @@ const path = require("path");
 const pay = async (req, res) => {
   try {
     const { customerName, address, phone,email,pincode, items, grandTotal } = req.body;
+    console.log("req.user =", req.user);
+console.log("body =", req.body);
 
     // ✅ Generate unique 5-6 digit random bill number
     let billNumber;
@@ -28,8 +30,11 @@ const pay = async (req, res) => {
       productId: item._id   // ✅ keep productId for stock update
     }));
 
+    console.log("Decoded User:", req.user);
+
     // ✅ Save bill in DB
     const newBill = new Bill({
+      userId: req.user.id,
       billNumber,
       customerName,
       address,
@@ -37,9 +42,16 @@ const pay = async (req, res) => {
       email,
       pincode,
       items: mappedItems,
-      grandTotal
+      grandTotal,
+      status: "Pending" 
     });
+    console.log(newBill);
+    console.log("Creating bill:", {
+  userId: req.user.id,
+  status: "Pending",
+});
     await newBill.save();
+    
 
     // ✅ Reduce stock for each product
     for (const item of mappedItems) {
@@ -140,4 +152,98 @@ const getAllBills = async (req, res) => {
   }
 };
 
-module.exports = { pay, getInvoice, getAllBills };
+
+// ✅ Update Order Status (Admin)
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { billNumber } = req.params;
+    const { status } = req.body;
+
+    // Validate status
+    const allowedStatus = ["Pending", "Processing", "Delivered"];
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid order status",
+      });
+    }
+
+    const bill = await Bill.findOne({ billNumber });
+
+    if (!bill) {
+      return res.status(404).json({
+        success: false,
+        error: "Bill not found",
+      });
+    }
+
+    // Prevent updating after delivery
+    if (bill.status === "Delivered") {
+      return res.status(400).json({
+        success: false,
+        error: "Delivered orders cannot be modified.",
+      });
+    }
+
+    // Prevent skipping statuses
+    if (
+      bill.status === "Pending" &&
+      status !== "Processing"
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Pending orders can only move to Processing.",
+      });
+    }
+
+    if (
+      bill.status === "Processing" &&
+      status !== "Delivered"
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: "Processing orders can only move to Delivered.",
+      });
+    }
+
+    bill.status = status;
+
+    await bill.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated successfully.",
+      bill,
+    });
+
+  } catch (err) {
+    console.error("Update Status Error:", err);
+
+    res.status(500).json({
+      success: false,
+      error: "Failed to update order status.",
+    });
+  }
+};
+
+const getMyOrders = async (req, res) => {
+  try {
+    const bills = await Bill.find({
+      userId: req.user.id,
+    }).sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      bills,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch orders",
+    });
+  }
+};
+
+module.exports = { pay, getInvoice, getAllBills, updateOrderStatus, getMyOrders };
