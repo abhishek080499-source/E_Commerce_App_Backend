@@ -216,11 +216,11 @@ exports.verify = (req, res) => {
 //   }
 // };
 
-
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
+    // Check user
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -241,7 +241,7 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
-    // Create Brevo SMTP Transport
+    // Brevo SMTP Transport
     const transporter = nodemailer.createTransport({
       host: process.env.BREVO_HOST,
       port: Number(process.env.BREVO_PORT),
@@ -252,56 +252,79 @@ exports.forgotPassword = async (req, res) => {
       },
     });
 
-    // Verify SMTP Connection
+    // Verify SMTP
     await transporter.verify();
+    console.log("✅ Brevo SMTP Connected");
 
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    await transporter.sendMail({
-      from: `"E-Commerce Support" <${process.env.BREVO_USER}>`,
+    // Send Email
+    const info = await transporter.sendMail({
+      from: {
+        name: "E-Commerce Support",
+        address: process.env.BREVO_SENDER, // Verified sender email
+      },
       to: email,
       subject: "Reset Your Password",
       html: `
-        <div style="font-family:Arial,sans-serif;padding:20px;">
-          <h2>Password Reset</h2>
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;border:1px solid #ddd;border-radius:10px;">
+          <h2 style="color:#4f46e5;">Password Reset</h2>
 
-          <p>Hello ${user.username},</p>
+          <p>Hello <strong>${user.username}</strong>,</p>
 
           <p>We received a request to reset your password.</p>
 
-          <p>
+          <p style="text-align:center;margin:30px 0;">
             <a href="${resetLink}"
                style="
-                  background:#4f46e5;
-                  color:#fff;
-                  padding:12px 20px;
-                  text-decoration:none;
-                  border-radius:6px;
-                  display:inline-block;
+                background:#4f46e5;
+                color:white;
+                padding:12px 24px;
+                text-decoration:none;
+                border-radius:6px;
+                display:inline-block;
+                font-weight:bold;
                ">
-               Reset Password
+              Reset Password
             </a>
           </p>
 
-          <p>This link will expire in <b>15 minutes</b>.</p>
+          <p>
+            Or copy and paste this link into your browser:
+          </p>
 
-          <p>If you didn't request this, you can safely ignore this email.</p>
+          <p style="word-break:break-all;color:#2563eb;">
+            ${resetLink}
+          </p>
+
+          <p>This link will expire in <strong>15 minutes</strong>.</p>
+
+          <p>If you didn't request this password reset, simply ignore this email.</p>
 
           <hr>
 
-          <small>E-Commerce Team</small>
+          <p style="font-size:13px;color:#666;">
+            Thanks,<br>
+            E-Commerce Team
+          </p>
         </div>
       `,
     });
 
-    res.status(200).json({
+    console.log("✅ Email sent successfully");
+    console.log(info);
+
+    return res.status(200).json({
+      success: true,
       message: "Password reset link sent successfully.",
     });
 
   } catch (err) {
-    console.error("Forgot Password Error:", err);
+    console.error("❌ Forgot Password Error");
+    console.error(err);
 
-    res.status(500).json({
+    return res.status(500).json({
+      success: false,
       error: err.message,
     });
   }
