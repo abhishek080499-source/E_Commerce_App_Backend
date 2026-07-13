@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const brevo = require("@getbrevo/brevo");
+const axios = require("axios");
 
 // Regex for strong password
 const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
@@ -220,15 +221,17 @@ exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
+    // Find User
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
+        success: false,
         error: "User not found",
       });
     }
 
-    // Generate reset token
+    // Generate Reset Token
     const resetToken = jwt.sign(
       { id: user._id },
       process.env.JWT_RESET_SECRET,
@@ -240,78 +243,102 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
+    // Reset Link
     const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
 
-    // Configure Brevo API
-    const apiInstance = new brevo.TransactionalEmailsApi();
-
-    apiInstance.setApiKey(
-      brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
-
-    // Email
-    await apiInstance.sendTransacEmail({
-      sender: {
-        email: process.env.BREVO_SENDER,
-        name: "E-Commerce Support",
-      },
-
-      to: [
-        {
-          email: email,
-          name: user.username,
+    // Send Email using Brevo REST API
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: {
+          name: "E-Commerce Support",
+          email: process.env.BREVO_SENDER,
         },
-      ],
 
-      subject: "Reset Your Password",
+        to: [
+          {
+            email: email,
+            name: user.username,
+          },
+        ],
 
-      htmlContent: `
-        <div style="font-family:Arial;padding:20px">
-          <h2>Password Reset</h2>
+        subject: "Reset Your Password",
 
-          <p>Hello <b>${user.username}</b>,</p>
+        htmlContent: `
+        <div style="font-family:Arial;padding:30px;max-width:600px;margin:auto;border:1px solid #ddd;border-radius:10px">
 
-          <p>You requested a password reset.</p>
+          <h2 style="color:#4f46e5;">Password Reset</h2>
 
-          <p>
-            <a href="${resetLink}"
-               style="
-                 background:#4f46e5;
-                 color:#fff;
-                 padding:12px 20px;
-                 text-decoration:none;
-                 border-radius:6px;
-                 display:inline-block;
-               ">
+          <p>Hello <strong>${user.username}</strong>,</p>
+
+          <p>We received a request to reset your password.</p>
+
+          <p style="margin:30px 0;text-align:center;">
+            <a
+              href="${resetLink}"
+              style="
+                background:#4f46e5;
+                color:white;
+                text-decoration:none;
+                padding:14px 25px;
+                border-radius:8px;
+                display:inline-block;
+                font-weight:bold;
+              "
+            >
               Reset Password
             </a>
           </p>
 
-          <p>If the button doesn't work, copy this link:</p>
+          <p>If the button doesn't work, copy and paste this URL into your browser:</p>
 
-          <p>${resetLink}</p>
+          <p style="word-break:break-all;color:#2563eb;">
+            ${resetLink}
+          </p>
 
-          <p>This link expires in <b>15 minutes</b>.</p>
+          <p>This link will expire in <strong>15 minutes</strong>.</p>
 
           <hr>
 
-          <small>E-Commerce Team</small>
-        </div>
-      `,
-    });
+          <p style="font-size:13px;color:#666;">
+            If you didn't request this email, you can safely ignore it.
+          </p>
 
-    res.status(200).json({
+          <p style="font-size:13px;color:#666;">
+            E-Commerce Team
+          </p>
+
+        </div>
+        `,
+      },
+      {
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+          "api-key": process.env.BREVO_API_KEY,
+        },
+      }
+    );
+
+    console.log("Brevo Response:", response.data);
+
+    return res.status(200).json({
       success: true,
       message: "Password reset email sent successfully.",
     });
 
   } catch (err) {
-    console.error("Brevo Error:", err);
+    console.error("Forgot Password Error:");
 
-    res.status(500).json({
+    if (err.response) {
+      console.error(err.response.data);
+    } else {
+      console.error(err.message);
+    }
+
+    return res.status(500).json({
       success: false,
-      error: err.message,
+      error: err.response?.data || err.message,
     });
   }
 };
