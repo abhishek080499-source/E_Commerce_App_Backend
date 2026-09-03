@@ -5,6 +5,7 @@ const {
   getAllBills,
   updateOrderStatus,
   getMyOrders,
+  deleteBill,
 } = require("../controllers/paymentController");
 
 const { authMiddleware, isAdmin } = require("../middleware/authMiddleware");
@@ -30,5 +31,14 @@ router.patch(
   isAdmin,
   updateOrderStatus
 );
+
+
+router.delete(
+  "/delete/:billNumber",
+  authMiddleware,
+  isAdmin,
+  deleteBill
+);
+
 
 module.exports = router;

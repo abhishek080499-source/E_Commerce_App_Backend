@@ -1,4 +1,5 @@
 // models/Bill.js
+
 const mongoose = require("mongoose");
 
 const billSchema = new mongoose.Schema({
@@ -19,6 +20,16 @@ const billSchema = new mongoose.Schema({
   },
 
   phone: {
+    type: String,
+    required: true,
+  },
+
+  email: {
+    type: String,
+    required: true,
+  },
+
+  pincode: {
     type: String,
     required: true,
   },
@@ -44,6 +55,11 @@ const billSchema = new mongoose.Schema({
         type: Number,
         required: true,
       },
+
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
     },
   ],
 
@@ -52,17 +68,28 @@ const billSchema = new mongoose.Schema({
     required: true,
   },
 
-  // ✅ Order Status
+  // Order Status
   status: {
     type: String,
     enum: ["Pending", "Processing", "Delivered"],
     default: "Pending",
   },
+
+  // User who placed the order
   userId: {
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User",
-  required: true,
-},
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+
+  // Cloudinary invoice information
+  invoiceUrl: {
+    type: String,
+  },
+
+  invoicePublicId: {
+    type: String,
+  },
 
   createdAt: {
     type: Date,
@@ -71,3 +98,6 @@ const billSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("Bill", billSchema);
+
+
+
