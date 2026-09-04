@@ -48,19 +48,78 @@ const uploadToCloudinary = (file) => {
   });
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
 // ============================================================
 // GET ALL PRODUCTS
 // ============================================================
-
 exports.getProducts = async (req, res) => {
   try {
-    const { categoryId } = req.query;
+    const { categoryId, search } = req.query;
 
     let query = {};
+
+    // ==========================================================
+    // CATEGORY FILTER
+    // ==========================================================
 
     if (categoryId) {
       query.category = categoryId;
     }
+
+    // ==========================================================
+    // SEARCH
+    // ==========================================================
+
+    if (search && search.trim()) {
+      const searchText = search.trim();
+
+      // Find category matching the search text
+      const matchingCategories = await Category.find({
+        name: {
+          $regex: searchText,
+          $options: "i",
+        },
+      }).select("_id");
+
+      const categoryIds = matchingCategories.map(
+        (category) => category._id
+      );
+
+      query.$or = [
+        {
+          itemName: {
+            $regex: searchText,
+            $options: "i",
+          },
+        },
+        {
+          description: {
+            $regex: searchText,
+            $options: "i",
+          },
+        },
+        {
+          category: {
+            $in: categoryIds,
+          },
+        },
+      ];
+    }
+
+    // ==========================================================
+    // GET PRODUCTS
+    // ==========================================================
 
     const products = await Product.find(query).populate(
       "category",
@@ -76,6 +135,8 @@ exports.getProducts = async (req, res) => {
     });
   }
 };
+
+
 
 // ============================================================
 // GET SINGLE PRODUCT
