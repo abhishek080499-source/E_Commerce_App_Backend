@@ -512,7 +512,7 @@ exports.forgotPassword = async (req, res) => {
       color:#111827;
     "
   >
-    Swift<span style="color:#2563eb;">Cart</span>
+    SwiftCart
   </div>
 
   <p
