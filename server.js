@@ -16,6 +16,7 @@ const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const wishlistRoutes = require("./routes/wishlistRoutes");
+const healthRoutes = require("./routes/healthRoutes");
 
 // Jobs
 const { startStockCheckJob } = require("./jobs/stockCheckJob");
@@ -65,6 +66,7 @@ connectDB()
 app.get("/", (req, res) => {
   res.json({ message: "API is running" });
 });
+app.use("/health", healthRoutes);
 app.use("/auth", authRoutes);
 app.use("/products", productRoutes);
 app.use("/payment", paymentRoutes);
@@ -86,7 +88,7 @@ app.use((err, req, res, next) => {
 
 // ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT,"0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
 
 module.exports = app;
 
