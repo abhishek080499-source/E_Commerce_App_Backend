@@ -210,7 +210,7 @@ exports.forgotPassword = async (req, res) => {
       "https://api.brevo.com/v3/smtp/email",
       {
         sender: {
-          name: "E-Commerce Support",
+          name: "SwiftCart Support",
           email: process.env.BREVO_SENDER,
         },
 
