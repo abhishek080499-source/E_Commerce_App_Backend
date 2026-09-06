@@ -223,7 +223,7 @@ exports.forgotPassword = async (req, res) => {
 
         subject: "Reset Your Password",
 
-        htmlContent: 
+        htmlContent: `
         <div
   style="
     margin:0;
@@ -537,11 +537,11 @@ exports.forgotPassword = async (req, res) => {
     &copy; 2026 SwiftCart. All rights reserved.
   </p>
 </div>
-```
+
 
   </div>
 </div>
-
+`
       },
       {
         headers: {
