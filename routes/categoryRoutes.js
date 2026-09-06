@@ -11,7 +11,7 @@ const {
 const router = express.Router();
 
 // Public routes
-router.get("/", getCategories); // anyone can view categories
+router.get("/",authMiddleware, getCategories); // anyone can view categories
 
 // Admin-only routes
 router.post("/", authMiddleware, isAdmin, addCategory);   // add category
