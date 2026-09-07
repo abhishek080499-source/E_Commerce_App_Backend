@@ -145,19 +145,23 @@ res.cookie("accessToken", newAccessToken, {
 
 // ------------------- LOGOUT -------------------
 exports.logout = async (req, res) => {
-  res.clearCookie("accessToken", cookieOptions);
-res.clearCookie("refreshToken", cookieOptions);
-  // Remove refresh token from DB
-  const userId = req.user?.id;
-  if (userId) {
-    const user = await User.findById(userId);
-    if (user) {
-      user.refreshToken = null;
-      await user.save();
-    }
-  }
+  try {
+    res.clearCookie("accessToken", cookieOptions);
+    res.clearCookie("refreshToken", cookieOptions);
 
-  res.json({ message: "Logged out successfully" });
+    const userId = req.user?.id;
+
+    if (userId) {
+      await User.findByIdAndUpdate(userId, {
+        $set: { refreshToken: null },
+      });
+    }
+
+    res.json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Logout failed" });
+  }
 };
 
 // ------------------- VERIFY SESSION -------------------
