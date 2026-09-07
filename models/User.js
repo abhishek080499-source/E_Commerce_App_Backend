@@ -45,6 +45,12 @@ const userSchema = new mongoose.Schema(
 
     type: { type: String, required: true, enum: ["admin", "customer"] },
 
+    // Refresh token for maintaining login session
+      refreshToken: {
+      type: String,
+      default: null,
+    },
+
     // ✅ Fields for forgot/reset password flow
     resetToken: { type: String },
     resetTokenExpiry: { type: Date },
